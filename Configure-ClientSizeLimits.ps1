@@ -10,7 +10,7 @@
     THIS CODE IS MADE AVAILABLE AS IS, WITHOUT WARRANTY OF ANY KIND. THE ENTIRE 
     RISK OF THE USE OR THE RESULTS FROM THE USE OF THIS CODE REMAINS WITH THE USER.
 	
-    Version 1.2, February 15th, 2017
+    Version 1.3, October 9th, 2018
 
     .DESCRIPTION
     Configure client-specific message size limits. Specified limits are in 1KB units.
@@ -43,16 +43,16 @@
 
     Revision History
     ---------------------------------------------------------------------
-    1.0		Initial release
-    1.1		Added admin check for running locally
+    1.0	  Initial release
+    1.1   Added admin check for running locally
           When using all servers, processes server hosting EMS session last'
-
     1.11  Fixed issue running remotely against a server
     1.2   Added EAS parameter
           Changed unit size to bytes (you can use GB/MB/KB etc).
           Introduced changes to support Exchange 2016
           Added NoBackup switch to skip creating backup files
           Some code reformatting
+    1.3   Added WhatIf and Confirm support
 
     .EXAMPLE
     Configure-ClientSizeLimits.ps1 -OWA 25MB -EWS 15MB -EAS 25MB
@@ -61,7 +61,7 @@
 #>
 #Requires -Version 3.0
 
-[cmdletbinding(SupportsShouldProcess = $true, DefaultParameterSetName= 'Server')]
+[cmdletbinding(SupportsShouldProcess=$true, DefaultParameterSetName= 'Server')]
 param(
   [parameter( Mandatory=$false, ParameterSetName = 'Server')]
     [string]$Server= $env:ComputerName,
@@ -198,7 +198,7 @@ process {
     }
     Else {
         If( (Get-ExchangeServer -Identity $Server).adminDisplayVersion.Major -ne 15) {
-            Write-Error ('{0} appears not to be an Exchange 2013/2016 server' -f $Server)
+            Write-Error ('{0} appears not to be an Exchange 2013/2016/2019 server' -f $Server)
             Exit $ERR_NOT201316SERVER
         }
         $ServerList= @( $Server)
@@ -222,7 +222,9 @@ process {
                 If(! $NoBackup) {
                     Copy-Item -Path $wcfFile -Destination ('{0}_{1}.bak' -f $wcfFile, (Get-Date).toString('yyyMMddHHmmss')) -Force
                 }
-                $wcfXML.Save( $wcfFile)
+                if ($pscmdlet.ShouldProcess($wcfFile, "Saving modifications")) {
+                    $wcfXML.Save( $wcfFile)
+                }
             }
             If( $ThisServer.isMailboxServer) {
                 $wcfFile= Get-WCFFileName -ExInstallPath $ExInstallPath -FileName 'ClientAccess\exchweb\ews\web.config'
@@ -241,7 +243,9 @@ process {
                 If(! $NoBackup) {
                     Copy-Item -Path $wcfFile -Destination ('{0}_{1}.bak' -f $wcfFile, (Get-Date).toString('yyyMMddHHmmss')) -Force
                 }
-                $wcfXML.Save( $wcfFile)
+                if ($pscmdlet.ShouldProcess($wcfFile, "Saving modifications")) {
+                    $wcfXML.Save( $wcfFile)
+                }
             }
         }
 
@@ -255,7 +259,9 @@ process {
                 If(! $NoBackup) {
                     Copy-Item -Path $wcfFile -Destination ('{0}_{1}.bak' -f $wcfFile, (Get-Date).toString('yyyMMddHHmmss')) -Force
                 }
-                $wcfXML.Save( $wcfFile)
+                if ($pscmdlet.ShouldProcess($wcfFile, "Saving modifications")) {
+                    $wcfXML.Save( $wcfFile)
+                }
             }
             If( $ThisServer.isMailboxServer) {
                 $wcfFile= Get-WCFFileName -ExInstallPath $ExInstallPath -FileName 'ClientAccess\Owa\web.config'
@@ -284,7 +290,9 @@ process {
                 If(! $NoBackup) {
                     Copy-Item -Path $wcfFile -Destination ('{0}_{1}.bak' -f $wcfFile, (Get-Date).toString('yyyMMddHHmmss')) -Force
                 }
-                $wcfXML.Save( $wcfFile)
+                if ($pscmdlet.ShouldProcess($wcfFile, "Saving modifications")) {
+                    $wcfXML.Save( $wcfFile)
+                }
             }
         }
 
@@ -298,7 +306,9 @@ process {
                 If(! $NoBackup) {
                     Copy-Item -Path $wcfFile -Destination ('{0}_{1}.bak' -f $wcfFile, (Get-Date).toString('yyyMMddHHmmss')) -Force
                 }
-                $wcfXML.Save( $wcfFile)
+                if ($pscmdlet.ShouldProcess($wcfFile, "Saving modifications")) {
+                    $wcfXML.Save( $wcfFile)
+                }
             }
             If( $ThisServer.isMailboxServer) {
                 $wcfFile= Get-WCFFileName -ExInstallPath $ExInstallPath -FileName 'ClientAccess\Sync\web.config'
@@ -318,7 +328,9 @@ process {
                 If(! $NoBackup) {
                     Copy-Item -Path $wcfFile -Destination ('{0}_{1}.bak' -f $wcfFile, (Get-Date).toString('yyyMMddHHmmss')) -Force
                 }
-                $wcfXML.Save( $wcfFile)
+                if ($pscmdlet.ShouldProcess($wcfFile, "Saving modifications")) {
+                    $wcfXML.Save( $wcfFile)
+                }
             }
         }
     }
