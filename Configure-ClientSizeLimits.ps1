@@ -10,7 +10,7 @@
     THIS CODE IS MADE AVAILABLE AS IS, WITHOUT WARRANTY OF ANY KIND. THE ENTIRE 
     RISK OF THE USE OR THE RESULTS FROM THE USE OF THIS CODE REMAINS WITH THE USER.
 	
-    Version 1.31, March 26th, 2019
+    Version 1.4, July 19th, 2019
 
     .DESCRIPTION
     Configure client-specific message size limits. Specified limits are in 1KB units.
@@ -56,6 +56,7 @@
     1.31  Fixed updating of maxAllowedContentLength & maxRequestLength
           Some code optimizations
           Some cosmetics related to Ex2019
+    1.4   Fixed setting EWS & EAS settings in wrong node
 
     .EXAMPLE
     Configure-ClientSizeLimits.ps1 -OWA 25MB -EWS 15MB -EAS 25MB
@@ -137,10 +138,11 @@ process {
                 If( $Element) {
                     $ProjectedPath= ('{0}/{1}' -f $CurrentPath, $Element )
                     If( ($WebConfig.Value).SelectSingleNode( $ProjectedPath)) {
-                        # This node already exists
+                        Write-Verbose ('Node {0} exists' -f $ProjectedPath)
                     }
                     Else {
                         # Node doesn't exist - create element
+                        Write-Verbose ('Creating node {0}' -f $ProjectedPath)
                         $NewNode= ($WebConfig.Value).CreateElement( $Element)
                         $null= ($WebConfig.Value).SelectSingleNode( $CurrentPath).AppendChild( $NewNode)
                     }
@@ -150,7 +152,7 @@ process {
                     # Empty element (root)
                 }
             }
-            $OldValue= 'Non-Existent'
+            $OldValue= 'N/A'
         }
         Else {
             Try {
@@ -221,7 +223,7 @@ process {
                 $wcfFile= Get-WCFFileName -Identity $Identity -ExInstallPath $ExInstallPath -FileName 'FrontEnd\HttpProxy\ews\web.config'
                 $wcfXML= [xml](Get-Content -Path $wcfFile)
                 Write-Output ('Processing {0}' -f $wcfFile)
-                Configure-XMLAttribute -WebConfig ([ref]$wcfXML) -Path '//configuration/location/system.webServer/security/requestFiltering/requestLimits' -Attribute 'maxAllowedContentLength' -Value $EWS
+                Configure-XMLAttribute -WebConfig ([ref]$wcfXML) -Path '//configuration/system.webServer/security/requestFiltering/requestLimits' -Attribute 'maxAllowedContentLength' -Value $EWS
                 If(! $NoBackup) {
                     Copy-Item -Path $wcfFile -Destination ('{0}_{1}.bak' -f $wcfFile, (Get-Date).toString('yyyMMddHHmmss')) -Force
                 }
@@ -233,7 +235,7 @@ process {
                 $wcfFile= Get-WCFFileName -Identity $Identity  -ExInstallPath $ExInstallPath -FileName 'ClientAccess\exchweb\ews\web.config'
                 $wcfXML= [xml](Get-Content -Path $wcfFile)
                 Write-Output ('Processing {0}' -f $wcfFile)
-                Configure-XMLAttribute -WebConfig ([ref]$wcfXML) -Path '//configuration/location/system.webServer/security/requestFiltering/requestLimits' -Attribute 'maxAllowedContentLength' -Value $EWS
+                Configure-XMLAttribute -WebConfig ([ref]$wcfXML) -Path '//configuration/system.webServer/security/requestFiltering/requestLimits' -Attribute 'maxAllowedContentLength' -Value $EWS
                 $Elem= $wcfXML.SelectNodes('//*[@maxReceivedMessageSize]') | Where-Object { $_.ParentNode.ChildNodes.Name -notcontains 'UMLegacyMessageEncoderSoap11Element' }
                 $Name= 'maxReceivedMessageSize'
                 $Value= [string]($EWS) 
@@ -304,8 +306,8 @@ process {
                 $wcfFile= Get-WCFFileName -Identity $Identity  -ExInstallPath $ExInstallPath -FileName 'FrontEnd\HttpProxy\Sync\web.config'
                 $wcfXML= [xml](Get-Content -Path $wcfFile)
                 Write-Output ('Processing {0}' -f $wcfFile)
-                Configure-XMLAttribute -WebConfig ([ref]$wcfXML) -Path '//configuration/location/system.webServer/security/requestFiltering/requestLimits' -Attribute 'maxAllowedContentLength' -Value $EAS
-                Configure-XMLAttribute -WebConfig ([ref]$wcfXML) -Path '//configuration/location/system.web/httpRuntime' -Attribute 'maxRequestLength' -Value (RoundTo-KBUpward -Value $EAS)
+                Configure-XMLAttribute -WebConfig ([ref]$wcfXML) -Path '//configuration/system.webServer/security/requestFiltering/requestLimits' -Attribute 'maxAllowedContentLength' -Value $EAS
+                Configure-XMLAttribute -WebConfig ([ref]$wcfXML) -Path '//configuration/system.web/httpRuntime' -Attribute 'maxRequestLength' -Value (RoundTo-KBUpward -Value $EAS)
                 If(! $NoBackup) {
                     Copy-Item -Path $wcfFile -Destination ('{0}_{1}.bak' -f $wcfFile, (Get-Date).toString('yyyMMddHHmmss')) -Force
                 }
@@ -317,8 +319,8 @@ process {
                 $wcfFile= Get-WCFFileName -Identity $Identity  -ExInstallPath $ExInstallPath -FileName 'ClientAccess\Sync\web.config'
                 $wcfXML= [xml](Get-Content -Path $wcfFile)
                 Write-Output ('Processing {0}' -f $wcfFile)
-                Configure-XMLAttribute -WebConfig ([ref]$wcfXML) -Path '//configuration/location/system.webServer/security/requestFiltering/requestLimits' -Attribute 'maxAllowedContentLength' -Value $EAS
-                Configure-XMLAttribute -WebConfig ([ref]$wcfXML) -Path '//configuration/location/system.web/httpRuntime' -Attribute 'maxRequestLength' -Value (RoundTo-KBUpward -Value $EAS)
+                Configure-XMLAttribute -WebConfig ([ref]$wcfXML) -Path '//configuration/system.webServer/security/requestFiltering/requestLimits' -Attribute 'maxAllowedContentLength' -Value $EAS
+                Configure-XMLAttribute -WebConfig ([ref]$wcfXML) -Path '//configuration/system.web/httpRuntime' -Attribute 'maxRequestLength' -Value (RoundTo-KBUpward -Value $EAS)
 
                 $Elem= $wcfXML.SelectSingleNode('//configuration/appSettings/add[@key="MaxDocumentDataSize"]')
                 $Name= 'MaxDocumentDataSize'
